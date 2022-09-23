@@ -2,6 +2,7 @@ FROM python:3.8 as builder
 
 WORKDIR app
 
+
 RUN pip install --upgrade pip
 
 COPY ./requirements.txt .

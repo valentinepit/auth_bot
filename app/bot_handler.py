@@ -5,7 +5,7 @@ from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor
 
 from config import create_configuration
-from app.w_guard.configurator import WGConfigurator
+from w_guard.configurator import WGConfigurator
 
 TG_TOKEN = os.environ["TG_TOKEN"]
 ANALYTICS_ID = os.environ["CHANNEL_ID"]
