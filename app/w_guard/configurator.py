@@ -30,21 +30,28 @@ class WGConfigurator:
         except KeyError:
             return _conf.peers[self.pub_key]["AllowedIPs"]
         _conf.add_attr(self.pub_key, 'AllowedIPs', new_ip)
-        subprocess.call(['sudo', 'chmod', '756', '/etc/wireguard/wg0.conf'])
-        _conf.write_file()
-        subprocess.call(['sudo', 'chmod', '755', '/etc/wireguard/wg0.conf'])
+        self.save_configuration(_conf)
         return new_ip
 
     def restart_wg(self):
         subprocess.call(['sudo', 'wg-quick', 'down', '/etc/wireguard/wg0.conf'])
         subprocess.call(['sudo', 'wg-quick', 'up', '/etc/wireguard/wg0.conf'])
 
-    def del_old_peer(self, key):
-        _conf = self.get_configuration()
-        _conf.del_peer(key)
+    def save_configuration(self, _conf):
         subprocess.call(['sudo', 'chmod', '756', '/etc/wireguard/wg0.conf'])
         _conf.write_file()
         subprocess.call(['sudo', 'chmod', '755', '/etc/wireguard/wg0.conf'])
+
+    def del_old_peer(self):
+        _conf = self.get_configuration()
+        try:
+            _conf.del_peer(self.pub_key)
+            message = f"{self.pub_key}  --- Was deleted"
+            self.save_configuration(_conf)
+            self.restart_wg()
+        except KeyError:
+            return f"No {self.pub_key} in wg0.conf"
+        return message
 
     def update_configuration(self):
         conf = self.get_configuration()
