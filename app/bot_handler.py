@@ -4,7 +4,7 @@ from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor
 
-from config import create_configuration
+from config import create_configuration, admins
 from w_guard.configurator import WGConfigurator
 
 TG_TOKEN = os.environ["TG_TOKEN"]
@@ -32,28 +32,25 @@ async def process_help_command(message: types.Message):
 
 @dp.message_handler(commands=["add_user"])
 async def process_add_channel_command(msg: types.Message):
-    pub_key = msg.get_args()
-    wg = WGConfigurator(pub_key, msg.from_user.username)
-    ip = wg.update_configuration()
-    wg_conf = create_configuration(_ip, SERVER_PUB_KEY, SERVER_ADDRESS)
-
+    if msg.from_user.username in admins:
+        pub_key = msg.get_args()
+        wg = WGConfigurator(pub_key, msg.from_user.username)
+        _ip = wg.update_configuration()
+        wg_conf = create_configuration(_ip, SERVER_PUB_KEY, SERVER_ADDRESS)
+    else:
+        wg_conf = f"Permission Denied for {msg.from_user.username}"
     await bot.send_message(msg.from_user.id, wg_conf)
 
 
 @dp.message_handler(commands=["del_user"])
 async def process_add_channel_command(msg: types.Message):
-    pub_key = msg.get_args()
-    wg = WGConfigurator(pub_key, msg.from_user.username)
-    message = wg.del_old_peer()
+    if msg.from_user.username in admins:
+        pub_key = msg.get_args()
+        wg = WGConfigurator(pub_key, msg.from_user.username)
+        message = wg.del_old_peer()
+    else:
+        message = f"Permission Denied for {msg.from_user.username}"
     await bot.send_message(msg.from_user.id, message)
-
-
-# @dp.message_handler()
-# async def echo_message(msg: types.Message):
-#     wg = WGConfigurator(msg.text, msg.from_user.username)
-#     _ip = wg.update_configuration()
-#     wg_conf = create_configuration(_ip, SERVER_PUB_KEY, SERVER_ADDRESS)
-#     await bot.send_message(msg.from_user.id, wg_conf)
 
 
 def start_bot():

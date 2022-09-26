@@ -16,6 +16,8 @@ sentry_sdk.init(
 logging.basicConfig(format="%(asctime)s -%(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+admins = ("galimovRZ", "pit_val", "korrom18",)
+
 
 def create_configuration(_ip, pub_key, server_ip):
     return f"[Interface]\nPrivateKey = <Your key>\n" \
