@@ -2,9 +2,11 @@ import os
 
 from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher
+from aiogram.types import callback_query
 from aiogram.utils import executor
 
 from config import create_configuration, admins
+import menu as nav
 from w_guard.configurator import WGConfigurator
 
 TG_TOKEN = os.environ["TG_TOKEN"]
@@ -18,7 +20,7 @@ dp = Dispatcher(bot)
 
 @dp.message_handler(commands=["start"])
 async def process_start_command(message: types.Message):
-    await message.reply("Введите /help для получения списка команд")
+    await message.reply("Введите /help для получения списка команд", reply_markup=nav.inline_kb)
 
 
 @dp.message_handler(commands=["help"])
@@ -31,37 +33,41 @@ async def process_help_command(message: types.Message):
     )
 
 
-@dp.message_handler(commands=["add_user"])
-async def process_add_channel_command(msg: types.Message):
+# @dp.message_handler(commands=["add_user"])
+async def add_user(msg: types.Message):
     if msg.from_user.username in admins:
         pub_key = msg.get_args()
         wg = WGConfigurator(msg.from_user.username, pub_key)
         _ip = wg.update_configuration()
-        wg_conf = create_configuration(_ip, SERVER_PUB_KEY, SERVER_ADDRESS)
+        message = create_configuration(_ip, SERVER_PUB_KEY, SERVER_ADDRESS)
     else:
-        wg_conf = f"Permission Denied for {msg.from_user.username}"
-    await bot.send_message(msg.from_user.id, wg_conf)
+        message = f"Permission Denied for {msg.from_user.username}"
+    return message
 
 
-@dp.message_handler(commands=["del_user"])
-async def process_add_channel_command(msg: types.Message):
+async def del_user(msg: types.Message):
     if msg.from_user.username in admins:
         pub_key = msg.get_args()
         wg = WGConfigurator(msg.from_user.username, pub_key)
         message = wg.del_old_peer()
     else:
         message = f"Permission Denied for {msg.from_user.username}"
-    await bot.send_message(msg.from_user.id, message)
+    return message
 
 
-@dp.message_handler(commands=["list"])
-async def process_add_channel_command(msg: types.Message):
-    message = ""
-    wg = WGConfigurator(msg.from_user.username)
-    peers = wg.get_peers()
-    for pub_key, name in peers.items():
-        message += f"{pub_key} : {name}\n"
-    await bot.send_message(msg.from_user.id, message)
+@dp.callback_query_handler(text=["list"])
+async def get_user_list(callback: types.CallbackQuery):
+    if callback.from_user.username in admins:
+        message = ""
+        wg = WGConfigurator(callback.from_user.username)
+        peers = wg.get_peers()
+        for pub_key, name in peers.items():
+            await callback.message.answer(f"{pub_key} : <b>{name}</b>\n", reply_markup=nav.sub_menu, parse_mode="HTML")
+        await callback.answer()
+    else:
+        message = f"Permission Denied for {callback.from_user.username}"
+        await callback.message.answer(message, reply_markup=nav.sub_menu)
+        await callback.answer()
 
 
 def start_bot():
