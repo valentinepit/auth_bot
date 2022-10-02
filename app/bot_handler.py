@@ -51,13 +51,16 @@ async def process_add_channel_command(msg: types.Message):
         message = wg.del_old_peer()
     else:
         message = f"Permission Denied for {msg.from_user.username}"
-    await bot.send_message(msg.from_user.id, message)\
+    await bot.send_message(msg.from_user.id, message)
 
 
 @dp.message_handler(commands=["list"])
 async def process_add_channel_command(msg: types.Message):
+    message = ""
     wg = WGConfigurator(msg.from_user.username)
-    message = wg.get_peers()
+    peers = wg.get_peers()
+    for pub_key, name in peers.items():
+        message += f"{pub_key} : {name}\n"
     await bot.send_message(msg.from_user.id, message)
 
 

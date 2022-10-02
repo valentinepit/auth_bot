@@ -67,8 +67,14 @@ class WGConfigurator:
         return message
 
     def get_peers(self):
+        peers = {}
         _conf = self.get_configuration()
-        return ""
+        for peer in _conf.peers.values():
+            try:
+                peers[peer["PublicKey"]] = peer["_rawdata"][0].split("#")[1]
+            except IndexError:
+                peers[peer["PublicKey"]] = peer["_rawdata"][0]
+        return peers
 
     def update_configuration(self):
         conf = self.get_configuration()
