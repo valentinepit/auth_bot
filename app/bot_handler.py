@@ -3,13 +3,12 @@ import os
 from aiogram import Bot, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import Dispatcher, FSMContext
-from aiogram.dispatcher.filters.state import StatesGroup
-from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import callback_query
+
 from aiogram.utils import executor
 
 from config import create_configuration, admins
 import menu as nav
+from states import AddState, DelState
 from w_guard.configurator import WGConfigurator
 
 TG_TOKEN = os.environ["TG_TOKEN"]
@@ -22,15 +21,6 @@ storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
 
-class AddState(StatesGroup):
-    name = State()
-    pub_key = State()
-
-
-class DelState(StatesGroup):
-    pub_key = State()
-
-
 @dp.message_handler(commands=["start"])
 async def process_start_command(message: types.Message):
     await message.reply("Введите /help для получения списка команд", reply_markup=nav.inline_kb)
@@ -40,9 +30,7 @@ async def process_start_command(message: types.Message):
 async def process_help_command(message: types.Message):
     await message.reply(
         "Данный бот предоставляет шаблон конфигурации для wireguard\n"
-        "/add_user <Name> <Public Key> - Добавить пользователя\n"
-        "/del_user <Public Key> - Удалить пользователя\n"
-        "/list - Выводит список пользователей"
+        "/start - Для вывода меню"
     )
 
 
