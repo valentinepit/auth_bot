@@ -1,16 +1,29 @@
-import wgconfig
-import subprocess
 import ipaddress
+import subprocess
+from wgconfig import WGConfig
+
+
+class WG(WGConfig):
+
+    def add_peer(self, key, leading_comment=None):
+        """Adds a new peer with the given (public) key and name"""
+        if key in self.peers:
+            raise KeyError('Peer to be added already exists')
+        self.lines.append('')  # append an empty line for separation
+        self.lines.append(f'[Peer] # {leading_comment}')
+        self.lines.append('{0} = {1}'.format(self.keyattr, key))
+        # Invalidate data cache
+        self.invalidate_data()
 
 
 class WGConfigurator:
 
-    def __init__(self, pub_key, name):
+    def __init__(self, name, pub_key=""):
         self.pub_key = pub_key
         self.name = name
 
     def get_configuration(self):
-        wc = wgconfig.WGConfig('wg0')
+        wc = WG('wg0')
         wc.read_file()
         return wc
 
@@ -26,7 +39,7 @@ class WGConfigurator:
     def add_new_peer(self, _conf):
         new_ip = self.get_new_ip(_conf)
         try:
-            _conf.add_peer(self.pub_key, f'#{self.name}')
+            _conf.add_peer(self.pub_key, leading_comment=self.name)
         except KeyError:
             return _conf.peers[self.pub_key]["AllowedIPs"]
         _conf.add_attr(self.pub_key, 'AllowedIPs', new_ip)
@@ -52,6 +65,10 @@ class WGConfigurator:
         except KeyError:
             return f"No {self.pub_key} in wg0.conf"
         return message
+
+    def get_peers(self):
+        _conf = self.get_configuration()
+        return ""
 
     def update_configuration(self):
         conf = self.get_configuration()

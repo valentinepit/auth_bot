@@ -26,7 +26,8 @@ async def process_help_command(message: types.Message):
     await message.reply(
         "Данный бот предоставляет шаблон конфигурации для wireguard\n"
         "/add_user <Public Key> - Добавить пользователя\n"
-        "/del_user <Public Key> - Удалить пользователя"
+        "/del_user <Public Key> - Удалить пользователя\n"
+        "/list - Выводит список пользователей"
     )
 
 
@@ -34,7 +35,7 @@ async def process_help_command(message: types.Message):
 async def process_add_channel_command(msg: types.Message):
     if msg.from_user.username in admins:
         pub_key = msg.get_args()
-        wg = WGConfigurator(pub_key, msg.from_user.username)
+        wg = WGConfigurator(msg.from_user.username, pub_key)
         _ip = wg.update_configuration()
         wg_conf = create_configuration(_ip, SERVER_PUB_KEY, SERVER_ADDRESS)
     else:
@@ -46,10 +47,17 @@ async def process_add_channel_command(msg: types.Message):
 async def process_add_channel_command(msg: types.Message):
     if msg.from_user.username in admins:
         pub_key = msg.get_args()
-        wg = WGConfigurator(pub_key, msg.from_user.username)
+        wg = WGConfigurator(msg.from_user.username, pub_key)
         message = wg.del_old_peer()
     else:
         message = f"Permission Denied for {msg.from_user.username}"
+    await bot.send_message(msg.from_user.id, message)\
+
+
+@dp.message_handler(commands=["list"])
+async def process_add_channel_command(msg: types.Message):
+    wg = WGConfigurator(msg.from_user.username)
+    message = wg.get_peers()
     await bot.send_message(msg.from_user.id, message)
 
 
