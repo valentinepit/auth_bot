@@ -19,7 +19,7 @@ add_menu = ReplyKeyboardMarkup(resize_keyboard=True).add(btn_add_submit, btn_mai
 btn_list = InlineKeyboardButton('List', callback_data='list')
 btn_add = InlineKeyboardButton('Add User', callback_data='add')
 btn_del = InlineKeyboardButton('Delete User', callback_data='del')
-inline_kb = InlineKeyboardMarkup(row_width=3).add(btn_list, btn_add, btn_add)
+inline_kb = InlineKeyboardMarkup(row_width=3).add(btn_list, btn_add, btn_del)
 
 btn_next = InlineKeyboardButton('Next', callback_data="next")
 btn_prev = InlineKeyboardButton('Prev', callback_data="prev")

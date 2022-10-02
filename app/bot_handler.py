@@ -1,7 +1,8 @@
 import os
 
 from aiogram import Bot, types
-from aiogram.dispatcher import Dispatcher
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher import Dispatcher, FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import callback_query
@@ -17,7 +18,8 @@ SERVER_PUB_KEY = os.environ["SERVER_PUB_KEY"]
 SERVER_ADDRESS = os.environ["SERVER_ADDRESS"]
 
 bot = Bot(token=TG_TOKEN)
-dp = Dispatcher(bot)
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
 
 
 class UserState(StatesGroup):
@@ -43,13 +45,29 @@ async def process_help_command(message: types.Message):
 @dp.message_handler(commands=["add_user"])
 async def add_user(msg: types.Message):
     if msg.from_user.username in admins:
-        data = msg.get_args()
-        wg = WGConfigurator(data.split()[0], data.split()[1])
-        _ip = wg.update_configuration()
-        message = create_configuration(_ip, SERVER_PUB_KEY, SERVER_ADDRESS)
+        await msg.answer("Введите имя нового пользователя")
+        await UserState.name.set()
     else:
         message = f"Permission Denied for {msg.from_user.username}"
+        await bot.send_message(msg.from_user.id, message)
+
+
+@dp.message_handler(state=UserState.name)
+async def get_username(msg: types.Message, state: FSMContext):
+    await state.update_data(name=msg.text)
+    await msg.answer("Отлично! Теперь введите публичный ключ.")
+    await UserState.next()
+
+
+@dp.message_handler(state=UserState.pub_key)
+async def get_address(msg: types.Message, state: FSMContext):
+    await state.update_data(pub_key=msg.text)
+    data = await state.get_data()
+    wg = WGConfigurator(data["name"], data["pub_key"])
+    _ip = wg.update_configuration()
+    message = create_configuration(_ip, SERVER_PUB_KEY, SERVER_ADDRESS)
     await bot.send_message(msg.from_user.id, message)
+    await state.finish()
 
 
 @dp.message_handler(commands=["del_user"])
