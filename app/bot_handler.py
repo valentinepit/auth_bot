@@ -22,8 +22,12 @@ storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
 
-class UserState(StatesGroup):
+class AddState(StatesGroup):
     name = State()
+    pub_key = State()
+
+
+class DelState(StatesGroup):
     pub_key = State()
 
 
@@ -42,53 +46,63 @@ async def process_help_command(message: types.Message):
     )
 
 
-@dp.message_handler(commands=["add_user"])
-async def add_user(msg: types.Message):
-    if msg.from_user.username in admins:
-        await msg.answer("Введите имя нового пользователя")
-        await UserState.name.set()
+@dp.callback_query_handler(text=["add"])
+async def add_user(callback: types.CallbackQuery):
+    if callback.from_user.username in admins:
+        await callback.message.answer("Введите имя нового пользователя")
+        await callback.answer()
+        await AddState.name.set()
     else:
-        message = f"Permission Denied for {msg.from_user.username}"
-        await bot.send_message(msg.from_user.id, message)
+        message = f"Permission Denied for {callback.from_user.username}"
+        await bot.send_message(callback.from_user.id, message)
 
 
-@dp.message_handler(state=UserState.name)
+@dp.message_handler(state=AddState.name)
 async def get_username(msg: types.Message, state: FSMContext):
     await state.update_data(name=msg.text)
     await msg.answer("Отлично! Теперь введите публичный ключ.")
-    await UserState.next()
+    await AddState.next()
 
 
-@dp.message_handler(state=UserState.pub_key)
-async def get_address(msg: types.Message, state: FSMContext):
+@dp.message_handler(state=AddState.pub_key)
+async def get_new_user_pub(msg: types.Message, state: FSMContext):
     await state.update_data(pub_key=msg.text)
     data = await state.get_data()
     wg = WGConfigurator(data["name"], data["pub_key"])
     _ip = wg.update_configuration()
     message = create_configuration(_ip, SERVER_PUB_KEY, SERVER_ADDRESS)
-    await bot.send_message(msg.from_user.id, message)
+    await bot.send_message(msg.from_user.id, message, reply_markup=nav.inline_kb)
     await state.finish()
 
 
-@dp.message_handler(commands=["del_user"])
-async def del_user(msg: types.Message):
-    if msg.from_user.username in admins:
-        pub_key = msg.get_args()
-        wg = WGConfigurator(msg.from_user.username, pub_key)
-        message = wg.del_old_peer()
+@dp.callback_query_handler(text=["del"])
+async def del_user(callback: types.CallbackQuery):
+    if callback.from_user.username in admins:
+        await callback.message.answer("Введите public key пользователя")
+        await callback.answer()
+        await DelState.pub_key.set()
     else:
-        message = f"Permission Denied for {msg.from_user.username}"
-    await bot.send_message(msg.from_user.id, message)
+        message = f"Permission Denied for {callback.from_user.username}"
+        await bot.send_message(callback.from_user.id, message)
+
+
+@dp.message_handler(state=DelState.pub_key)
+async def get_old_user_pub(msg: types.Message, state: FSMContext):
+    await state.update_data(pub_key=msg.text)
+    data = await state.get_data()
+    wg = WGConfigurator(msg.from_user.username, data["pub_key"])
+    message = wg.del_old_peer()
+    await bot.send_message(msg.from_user.id, message, reply_markup=nav.inline_kb)
+    await state.finish()
 
 
 @dp.callback_query_handler(text=["list"])
 async def get_user_list(callback: types.CallbackQuery):
     if callback.from_user.username in admins:
-        message = ""
         wg = WGConfigurator(callback.from_user.username)
         peers = wg.get_peers()
         for pub_key, name in peers.items():
-            await callback.message.answer(f"{pub_key} : <b>{name}</b>\n", reply_markup=nav.sub_menu, parse_mode="HTML")
+            await callback.message.answer(f"{pub_key} : <b>{name}</b>\n", parse_mode="HTML")
         await callback.answer()
     else:
         message = f"Permission Denied for {callback.from_user.username}"
