@@ -9,7 +9,7 @@ class WG(WGConfig):
         """Adds a new peer with the given (public) key and name"""
         if key in self.peers:
             raise KeyError('Peer to be added already exists')
-        self.lines.append('')  # append an empty line for separation
+        self.lines.append('')
         self.lines.append(f'[Peer] # {leading_comment}')
         self.lines.append('{0} = {1}'.format(self.keyattr, key))
         # Invalidate data cache

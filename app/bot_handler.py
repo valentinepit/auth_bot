@@ -6,6 +6,7 @@ from aiogram.dispatcher import Dispatcher, FSMContext
 
 from aiogram.utils import executor
 
+from w_guard.utils import is_pub_key
 from config import create_configuration, admins
 import menu as nav
 from states import AddState, DelState
@@ -48,7 +49,7 @@ async def add_user(callback: types.CallbackQuery):
 @dp.message_handler(state=AddState.name)
 async def get_username(msg: types.Message, state: FSMContext):
     await state.update_data(name=msg.text)
-    await msg.answer("Отлично! Теперь введите публичный ключ.")
+    await msg.answer("Теперь введите публичный ключ.")
     await AddState.next()
 
 
@@ -56,9 +57,12 @@ async def get_username(msg: types.Message, state: FSMContext):
 async def get_new_user_pub(msg: types.Message, state: FSMContext):
     await state.update_data(pub_key=msg.text)
     data = await state.get_data()
-    wg = WGConfigurator(data["name"], data["pub_key"])
-    _ip = wg.update_configuration()
-    message = create_configuration(_ip, SERVER_PUB_KEY, SERVER_ADDRESS)
+    if is_pub_key(data["pub_key"]):
+        wg = WGConfigurator(data["name"], data["pub_key"])
+        _ip = wg.update_configuration()
+        message = create_configuration(_ip, SERVER_PUB_KEY, SERVER_ADDRESS)
+    else:
+        message = "Неверный формат ключа"
     await bot.send_message(msg.from_user.id, message, reply_markup=nav.inline_kb)
     await state.finish()
 
