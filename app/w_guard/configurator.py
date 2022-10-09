@@ -18,7 +18,7 @@ class WG(WGConfig):
 
 class WGConfigurator:
 
-    def __init__(self, name, pub_key=""):
+    def __init__(self, name=None, pub_key=""):
         self.pub_key = pub_key
         self.name = name
 
@@ -59,11 +59,11 @@ class WGConfigurator:
         _conf = self.get_configuration()
         try:
             _conf.del_peer(self.pub_key)
-            message = f"{self.pub_key}  --- Was deleted"
+            message = f"{self.name}  --- Was deleted"
             self.save_configuration(_conf)
             self.restart_wg()
         except KeyError:
-            return f"No {self.pub_key} in wg0.conf"
+            return f"No {self.name} in wg0.conf"
         return message
 
     def get_peers(self):

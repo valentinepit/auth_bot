@@ -1,5 +1,8 @@
 import logging
 
+from aiogram.dispatcher.filters import BoundFilter
+from aiogram.types.message import Message
+
 import sentry_sdk
 from sentry_sdk.integrations.logging import LoggingIntegration
 
@@ -16,7 +19,15 @@ sentry_sdk.init(
 logging.basicConfig(format="%(asctime)s -%(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-admins = ("galimovRZ", "pit_val", "korrom18",)
+ADMINS = (494620065, 1303537207, 102110158,)
+
+
+class IsAdmin(BoundFilter):
+    async def check(self, msg: Message):
+        user = msg.from_user.id
+        if user not in ADMINS:
+            await msg.answer('Только для администраторов')
+        return user in ADMINS
 
 
 def create_configuration(_ip, pub_key, server_ip):
